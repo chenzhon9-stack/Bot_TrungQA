@@ -2,18 +2,208 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Bot TrungQA Webhook</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bot TrungQA – Quản trị</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: 50px auto; padding: 20px; }
-    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f7fb;
+      margin: 0;
+      color: #111827;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 28px 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+    }
+    h1, h2 { margin-top: 0; }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      margin: 8px 0 14px;
+      font-size: 15px;
+    }
+    textarea { min-height: 90px; }
+    button {
+      background: #0068ff;
+      color: white;
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-dark { background: #0f172a; }
+    .btn-danger { background: #dc2626; }
+    .btn-green { background: #16a34a; }
+    code {
+      display: block;
+      background: #eef2ff;
+      padding: 10px;
+      border-radius: 8px;
+      word-break: break-all;
+    }
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 160px;
+      max-height: 420px;
+      overflow: auto;
+    }
+    .small { color: #64748b; font-size: 13px; }
+    .note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+      color: #9a3412;
+    }
   </style>
 </head>
 <body>
-  <h1>Bot TrungQA – Webhook đang chạy</h1>
-  <p>Webhook endpoint:</p>
-  <p><code>/api/webhook</code></p>
-  <p>Control endpoint:</p>
-  <p><code>/api/control</code></p>
-  <p>Status: <strong style="color:green">Running</strong></p>
+  <div class="wrap">
+    <div class="card">
+      <h1>Bot TrungQA – Quản trị</h1>
+      <p>Webhook URL:</p>
+      <code id="webhookUrl">https://bot-trung-qa2.vercel.app/api/webhook</code>
+      <p class="small">Trang này dùng để kiểm tra bot, cài webhook và test chuyển tiếp sang Google Sheet.</p>
+    </div>
+
+    <div class="card">
+      <h2>1. Quản trị</h2>
+      <label>ADMIN_KEY</label>
+      <input id="adminKey" type="password" placeholder="Nhập ADMIN_KEY (ví dụ trung123)">
+
+      <button onclick="callControl('getMe')">Kiểm tra Bot</button>
+      <button onclick="callControl('setWebhook')">Cài webhook</button>
+      <button onclick="callControl('getWebhookInfo')">Kiểm tra webhook</button>
+      <button class="btn-danger" onclick="callControl('deleteWebhook')">Tắt webhook</button>
+      <button class="btn-dark" onclick="debugEnv()">Debug biến môi trường</button>
+    </div>
+
+    <div class="card">
+      <h2>2. Test chuyển tiếp sang Apps Script</h2>
+      <button class="btn-green" onclick="testForward()">Test Vercel → Google Sheet</button>
+      <p class="small">Gửi payload giả lập tin nhắn `/id` sang Apps Script để kiểm tra ghi Sheet.</p>
+    </div>
+
+    <div class="card">
+      <h2>3. Gửi tin nhắn test (qua Zalo API)</h2>
+      <label>Chat ID</label>
+      <input id="chatId" placeholder="Dán chat_id">
+      <label>Nội dung</label>
+      <textarea id="text">✅ Test từ trang quản trị Bot TrungQA</textarea>
+      <button onclick="sendMessage()">Gửi tin</button>
+    </div>
+
+    <div class="card">
+      <h2>4. Kết quả</h2>
+      <pre id="result">Chưa có dữ liệu.</pre>
+    </div>
+  </div>
+
+  <script>
+    function getAdminKey() {
+      return document.getElementById('adminKey').value.trim();
+    }
+
+    function show(data) {
+      document.getElementById('result').textContent =
+        typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function callControl(action) {
+      show({ status: 'Đang xử lý...', action });
+      try {
+        const res = await fetch('/api/control', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': getAdminKey()
+          },
+          body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show('Lỗi: ' + err.message);
+      }
+    }
+
+    async function debugEnv() {
+      show({ status: 'Đang kiểm tra biến môi trường...' });
+      try {
+        const res = await fetch('/api/debug', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': getAdminKey()
+          }
+        });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show('Lỗi: ' + err.message);
+      }
+    }
+
+    async function testForward() {
+      show({ status: 'Đang test chuyển tiếp sang Apps Script...' });
+      try {
+        const res = await fetch('/api/test-forward', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': getAdminKey()
+          }
+        });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show('Lỗi: ' + err.message);
+      }
+    }
+
+    async function sendMessage() {
+      const chatId = document.getElementById('chatId').value.trim();
+      const text = document.getElementById('text').value.trim();
+      if (!chatId || !text) {
+        show({ ok: false, error: 'Thiếu chat_id hoặc nội dung' });
+        return;
+      }
+      show({ status: 'Đang gửi tin...' });
+      try {
+        const res = await fetch('/api/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': getAdminKey()
+          },
+          body: JSON.stringify({ chat_id: chatId, text })
+        });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show('Lỗi: ' + err.message);
+      }
+    }
+  </script>
 </body>
 </html>
