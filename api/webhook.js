@@ -11,10 +11,7 @@ module.exports = async (req, res) => {
   ).trim();
 
   if (expected && supplied !== expected) {
-    console.log(JSON.stringify({
-      type: "WEBHOOK_REJECTED",
-      at: new Date().toISOString(),
-    }));
+    console.log(JSON.stringify({ type: "WEBHOOK_REJECTED", at: new Date().toISOString() }));
     return res.status(403).json({ ok: false, error: "Invalid webhook secret" });
   }
 
@@ -24,7 +21,6 @@ module.exports = async (req, res) => {
     body: req.body || null,
   }));
 
-  // Chuyển tiếp sang Google Apps Script
   const appsScriptUrl = process.env.APPS_SCRIPT_URL;
   if (appsScriptUrl) {
     const forwardPayload = {
@@ -34,15 +30,24 @@ module.exports = async (req, res) => {
       data: req.body || {},
     };
 
-    fetch(appsScriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(forwardPayload),
-    }).catch((err) => console.error("Forward to Apps Script error:", err));
+    try {
+      const r = await fetch(appsScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(forwardPayload),
+      });
+      const text = await r.text();
+      console.log(JSON.stringify({
+        type: "FORWARD_RESULT",
+        status: r.status,
+        response: text.substring(0, 300),
+      }));
+    } catch (err) {
+      console.error("Forward to Apps Script error:", err);
+    }
+  } else {
+    console.log(JSON.stringify({ type: "FORWARD_SKIPPED", reason: "Missing APPS_SCRIPT_URL" }));
   }
 
-  return res.status(200).json({
-    ok: true,
-    message: "Webhook received",
-  });
+  return res.status(200).json({ ok: true, message: "Webhook received" });
 };
