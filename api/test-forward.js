@@ -26,8 +26,8 @@ module.exports = async (req, res) => {
         message: {
           message_id: "TEST_MSG_" + Date.now(),
           text: "/id",
-          chat: { id: "TEST_CHAT_ID", type: "private", title: "Test" },
-          from: { id: "TEST_FROM", display_name: "Test User" },
+          chat: { id: "caadb17bc4252d7b7434", type: "private", title: "Test" },
+          from: { id: "caadb17bc4252d7b7434", display_name: "Trungvt" },
         },
       },
     },
