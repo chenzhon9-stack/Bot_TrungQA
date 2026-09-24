@@ -11,7 +11,12 @@ module.exports = async (req, res) => {
   ).trim();
 
   if (expected && supplied !== expected) {
-    console.log(JSON.stringify({ type: "WEBHOOK_REJECTED", at: new Date().toISOString() }));
+    console.log(JSON.stringify({
+      type: "WEBHOOK_HEADERS",
+      keys: Object.keys(req.headers || {}),
+      hasBotApi: !!req.headers["x-bot-api-secret-token"],
+      hasWebhook: !!req.headers["x-webhook-secret"],
+    }));
     return res.status(403).json({ ok: false, error: "Invalid webhook secret" });
   }
 
